@@ -6,6 +6,7 @@
   (:require [clojure.test :as t]
             [nrepl.bencode-test]
             [nrepl.core-test]
+            [nrepl.transport-test]
             [nrepl.middleware.session-test]
             [nrepl.middleware.completion-test]
             [nrepl.middleware.lookup-test]

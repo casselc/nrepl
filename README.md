@@ -43,6 +43,10 @@ other ops. `interrupt` aborts the running eval and the session keeps serving.
 
 ## Client
 
+The client transport is implemented over jolt-tcp's portable outbound byte
+stream. nREPL framing therefore contains no runtime-specific socket FFI or
+descriptor handling of its own.
+
 ```clojure
 (require '[nrepl.core :as nrepl])
 

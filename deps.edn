@@ -1,9 +1,10 @@
 {:paths ["src"]
 
- ;; The client transport and the session worker bind libc (sockets + the process
- ;; symbols) through jolt.ffi; declared :process so jolt loads them before the
- ;; namespaces are required. No external Clojure deps.
- :jolt/native [{:name "libc (POSIX sockets)" :process true}]
+ ;; Outbound connections are provided by the portable jolt-tcp client. Its
+ ;; transitive jolt-net dependency owns the runtime-specific native bindings.
+ :deps {io.github.casselc/jolt-tcp
+        {:git/url "https://github.com/casselc/jolt-tcp.git"
+         :git/sha "0c3e085f43b90b346be9843e43448c890f8b701d"}}
 
  ;; This library's server middleware (sessions, interruptible-eval, completion,
  ;; lookup) — jolt.nrepl composes them over its built-in handler. A consuming
