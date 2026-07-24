@@ -9,9 +9,10 @@
 
 (defonce ^:private server-up
   (delay
-    (future (server/start port ['nrepl.middleware/default-middleware]))
-    (Thread/sleep 900)
-    :ok))
+    ;; `jolt.nrepl/start` now binds synchronously and returns only after the
+    ;; background accept loop has been installed. Wrapping it in another future
+    ;; both hides startup exceptions and races the first client unnecessarily.
+    (server/start port ['nrepl.middleware/default-middleware])))
 
 (defn conn [] @server-up (nrepl/connect "127.0.0.1" port))
 
