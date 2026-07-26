@@ -62,16 +62,21 @@
   ([value]
    (decode value 0))
   ([value index]
-   (let [wire (.getBytes value "ISO-8859-1")
-         cursor (bytes/cursor (bytes/window wire) index)
-         result (decode-cursor cursor)]
-     (case (:status result)
-       :ok
-       [(:value result)
-        (bytes/cursor-position (:cursor result))]
+   ;; The historical incremental API returned nil for any starting index at or
+   ;; beyond the currently accumulated wire string. Preserve that behavior
+   ;; while the byte-native Cursor API retains strict validated positions.
+   (if (and (integer? index) (<= (count value) index))
+     nil
+     (let [wire (.getBytes value "ISO-8859-1")
+           cursor (bytes/cursor (bytes/window wire) index)
+           result (decode-cursor cursor)]
+       (case (:status result)
+         :ok
+         [(:value result)
+          (bytes/cursor-position (:cursor result))]
 
-       :need-more
-       nil
+         :need-more
+         nil
 
-       :invalid
-       (invalid-frame! result)))))
+         :invalid
+         (invalid-frame! result))))))

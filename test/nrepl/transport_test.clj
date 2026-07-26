@@ -75,17 +75,34 @@
       (is (= second-message (transport/recv t)))
       (is (= 1 @calls)))))
 
-(deftest recv-returns-nil-at-eof
+(deftest recv-distinguishes-clean-from-truncated-eof
   (testing "clean EOF with an empty framing buffer"
     (with-redefs [client/receive-at-most! (fn [_ _] nil)]
       (is (nil? (transport/recv (fake-transport))))))
 
-  (testing "EOF does not invent a message from a partial frame"
+  (testing "EOF after a partial frame fails closed"
     (let [chunks
-          (atom [(.getBytes "d2:id3:cut" "ISO-8859-1") nil])]
+          (atom [(.getBytes "d2:id3:cut" "ISO-8859-1") nil])
+          error
+          (with-redefs [client/receive-at-most!
+                        (fn [_ _] (next-chunk! chunks))]
+            (try
+              (transport/recv (fake-transport))
+              nil
+              (catch :default error error)))]
+      (is (= :truncated-frame
+             (:nrepl.transport/error (ex-data error))))
+      (is (= 10 (:unread (ex-data error))))
+      (is (empty? @chunks))))
+
+  (testing "EOF after consuming all concatenated frames is clean"
+    (let [message {"id" "one"}
+          chunks (atom [(bencode/encode-bytes message) nil])
+          transport (fake-transport)]
       (with-redefs [client/receive-at-most!
                     (fn [_ _] (next-chunk! chunks))]
-        (is (nil? (transport/recv (fake-transport))))
+        (is (= message (transport/recv transport)))
+        (is (nil? (transport/recv transport)))
         (is (empty? @chunks))))))
 
 (deftest send-passes-one-whole-message-per-client-call

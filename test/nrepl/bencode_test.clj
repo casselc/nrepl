@@ -32,7 +32,11 @@
   (testing "a buffer without a complete value decodes to nil"
     (is (nil? (bencode/decode "5:ab")))      ;; string length 5, only 2 bytes
     (is (nil? (bencode/decode "i42")))       ;; integer without terminator
-    (is (nil? (bencode/decode "d2:op")))))   ;; dict missing the value
+    (is (nil? (bencode/decode "d2:op"))))    ;; dict missing the value
+  (testing "an index beyond accumulated input retains the historical nil"
+    (is (nil? (bencode/decode "" 0)))
+    (is (nil? (bencode/decode "1:a" 3)))
+    (is (nil? (bencode/decode "1:a" 9)))))
 
 (deftest decode-returns-next-index
   (let [s (str (bencode/encode {"a" 1}) (bencode/encode {"b" 2}))

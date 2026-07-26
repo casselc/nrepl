@@ -67,16 +67,24 @@
      :reason (:reason result)
      :offset (:offset result)})))
 
+(defn- truncated-frame! [cursor]
+  (throw
+   (ex-info
+    "nREPL peer closed in the middle of a bencode frame"
+    {:nrepl.transport/error :truncated-frame
+     :unread (bytes/remaining cursor)})))
+
 (defn recv
   "Receive the next message from `transport`, blocking until one is available
   or the connection closes (then nil).
 
   Complete messages commit the returned immutable Cursor. Incomplete frames
   retain only their unread suffix when another socket chunk arrives. Malformed
-  frames fail instead of being confused with incomplete input."
+  and EOF-truncated frames fail instead of being confused with clean EOF."
   [{:keys [connection buf max-frame-bytes]}]
   (loop []
-    (let [result (bencode/decode-cursor @buf)]
+    (let [cursor @buf
+          result (bencode/decode-cursor cursor)]
       (case (:status result)
         :ok
         (do
@@ -87,12 +95,16 @@
         (invalid-frame! result)
 
         :need-more
-        (when-let [chunk
-                   (client/receive-at-most! connection bufsize)]
-          (reset!
-           buf
-           (append-chunk @buf chunk max-frame-bytes))
-          (recur))))))
+        (if-let [chunk
+                 (client/receive-at-most! connection bufsize)]
+          (do
+            (reset!
+             buf
+             (append-chunk cursor chunk max-frame-bytes))
+            (recur))
+          (if (zero? (bytes/remaining cursor))
+            nil
+            (truncated-frame! cursor)))))))
 
 (defn close [{:keys [connection]}]
   (client/close! connection)

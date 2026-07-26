@@ -67,8 +67,10 @@ to `"done"`. `combine-responses`, `response-values`, `new-session`, and the
 byte-native codec. Incremental decoding distinguishes `:need-more` from
 `:invalid`; both preserve the exact original Cursor. The historical Latin-1
 `encode`/`decode` facade remains for source compatibility, but malformed input
-now throws instead of being mistaken for an incomplete frame. The transport
-also bounds an accumulated frame at 64 MiB before allocating the next buffer.
+now throws instead of being mistaken for an incomplete frame. A peer EOF is
+clean only at a frame boundary; EOF with unread frame bytes reports
+`:truncated-frame`. The transport also bounds an accumulated frame at 64 MiB
+before allocating the next buffer.
 
 This incubation branch consumes `../jolt-bencode` through a local dependency.
 That must become a published coordinate or an upstream stdlib placement before
