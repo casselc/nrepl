@@ -24,8 +24,18 @@
   {:extra-paths ["test"]
    :extra-deps
    {org.clojure/clojure {:mvn/version "1.12.2"}}
-   :main-opts ["-m" "nrepl.bencode-test-runner"]}}
+   :main-opts ["-m" "nrepl.bencode-test-runner"]}
+
+  :hegel
+  {:extra-paths ["test/hegel"]
+   :extra-deps
+   {io.github.chucklehead-dev/jolt-hegel
+    {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
+     :git/sha "e03127174bcaea4ffa1c0cef11bde0efa009e9dc"}}
+   :main-opts ["-m" "nrepl.transport-hegel-runner"]}}
 
  :tasks
  {test "joltc -M:test"
-  test-bencode-jvm "clojure -Srepro -M:jvm-bencode-test"}}
+  test-bencode-jvm "clojure -Srepro -M:jvm-bencode-test"
+  setup-hegel "joltc -A:hegel -m hegel.install"
+  test-hegel "joltc -M:hegel"}}
