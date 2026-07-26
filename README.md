@@ -44,8 +44,11 @@ other ops. `interrupt` aborts the running eval and the session keeps serving.
 ## Client
 
 The client transport is implemented over jolt-tcp's portable outbound byte
-stream. nREPL framing therefore contains no runtime-specific socket FFI or
-descriptor handling of its own.
+stream and the incubating `jolt-bencode`/`jolt-bytes` libraries. It keeps an
+immutable Cursor over unread bytes, reuses the same backing Window for
+concatenated messages, and copies only a partial suffix when another socket
+chunk arrives. nREPL framing therefore contains no runtime-specific socket FFI
+or descriptor handling of its own.
 
 ```clojure
 (require '[nrepl.core :as nrepl])
@@ -59,6 +62,17 @@ descriptor handling of its own.
 `message` sends a message (an `:id` is added) and returns the responses for it up
 to `"done"`. `combine-responses`, `response-values`, `new-session`, and the
 `code` macro mirror the official `nrepl.core`.
+
+`nrepl.bencode/encode-bytes`, `decode-bytes`, and `decode-cursor` expose the
+byte-native codec. Incremental decoding distinguishes `:need-more` from
+`:invalid`; both preserve the exact original Cursor. The historical Latin-1
+`encode`/`decode` facade remains for source compatibility, but malformed input
+now throws instead of being mistaken for an incomplete frame. The transport
+also bounds an accumulated frame at 64 MiB before allocating the next buffer.
+
+This incubation branch consumes `../jolt-bencode` through a local dependency.
+That must become a published coordinate or an upstream stdlib placement before
+the branch is independently consumable.
 
 ## Notes for jolt
 
@@ -75,3 +89,5 @@ same wire protocol and behaviours on jolt-native threads.
 
 `joltc -M:test` runs the suite (bencode, client, session, completion, lookup,
 interrupt) against an in-process server with the middleware installed.
+`clojure -Srepro -M:jvm-bencode-test` checks the compatibility facade and
+byte-native codec on JVM Clojure.

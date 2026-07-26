@@ -1,19 +1,29 @@
 (ns nrepl.transport-test
   "The nREPL framing adapter above teensyp.client."
   (:require [clojure.test :refer [deftest is testing]]
+            [jolt.bytes :as bytes]
             [nrepl.bencode :as bencode]
             [nrepl.transport :as transport]
             [teensyp.client :as client]))
 
-(defn- wire-bytes [wire]
-  (byte-array (map int wire)))
+(defn- byte-slice [value start end]
+  (let [result (byte-array (- end start))]
+    (System/arraycopy value start result 0 (- end start))
+    result))
 
-(defn- bytes->wire [bytes]
-  (String. bytes "ISO-8859-1"))
+(defn- append-bytes [left right]
+  (let [result (byte-array (+ (alength left) (alength right)))]
+    (System/arraycopy left 0 result 0 (alength left))
+    (System/arraycopy right 0 result (alength left) (alength right))
+    result))
 
 (defn- fake-transport []
   {:connection :fake-connection
-   :buf (atom "")})
+   :buf
+   (atom
+    (bytes/cursor
+     (bytes/window (byte-array 0))))
+   :max-frame-bytes 67108864})
 
 (defn- next-chunk! [chunks]
   (let [chunk (first @chunks)]
@@ -36,10 +46,10 @@
 (deftest recv-accumulates-partial-message-bytes
   (let [message {"id" "utf8"
                  "value" "naïve ☃"}
-        wire (bencode/encode message)
-        chunks (atom [(wire-bytes (subs wire 0 3))
-                      (wire-bytes (subs wire 3 11))
-                      (wire-bytes (subs wire 11))])]
+        wire (bencode/encode-bytes message)
+        chunks (atom [(byte-slice wire 0 3)
+                      (byte-slice wire 3 11)
+                      (byte-slice wire 11 (alength wire))])]
     (with-redefs [client/receive-at-most!
                   (fn [connection max-bytes]
                     (is (= :fake-connection connection))
@@ -51,9 +61,10 @@
 (deftest recv-preserves-multiple-messages-from-one-chunk
   (let [first-message {"id" "one" "value" "first"}
         second-message {"id" "two" "value" "second"}
-        chunk (wire-bytes
-                (str (bencode/encode first-message)
-                     (bencode/encode second-message)))
+        chunk
+        (append-bytes
+         (bencode/encode-bytes first-message)
+         (bencode/encode-bytes second-message))
         calls (atom 0)
         t (fake-transport)]
     (with-redefs [client/receive-at-most!
@@ -70,7 +81,8 @@
       (is (nil? (transport/recv (fake-transport))))))
 
   (testing "EOF does not invent a message from a partial frame"
-    (let [chunks (atom [(wire-bytes "d2:id3:cut") nil])]
+    (let [chunks
+          (atom [(.getBytes "d2:id3:cut" "ISO-8859-1") nil])]
       (with-redefs [client/receive-at-most!
                     (fn [_ _] (next-chunk! chunks))]
         (is (nil? (transport/recv (fake-transport))))
@@ -98,7 +110,46 @@
     (is (= 2 (count @calls)))
     (is (= (set (map #(into {} (map (fn [[k v]] [(name k) v]) %))
                      messages))
-           (set (map #(first (bencode/decode (bytes->wire %))) @calls))))))
+           (set (map #(:value (bencode/decode-bytes %)) @calls))))))
+
+(deftest malformed-peer-frame-fails-closed
+  (let [calls (atom 0)
+        invalid (.getBytes "i03e" "ISO-8859-1")
+        error
+        (with-redefs [client/receive-at-most!
+                      (fn [_ _]
+                        (swap! calls inc)
+                        invalid)]
+          (try
+            (transport/recv (fake-transport))
+            nil
+            (catch :default error error)))]
+    (is (= 1 @calls))
+    (is (= :invalid-frame
+           (:nrepl.transport/error (ex-data error))))
+    (is (= :noncanonical-integer
+           (:reason (ex-data error))))))
+
+(deftest partial-frame-buffer-is-bounded-before-allocation
+  (let [calls (atom 0)
+        transport
+        (assoc (fake-transport) :max-frame-bytes 3)
+        error
+        (with-redefs [client/receive-at-most!
+                      (fn [_ _]
+                        (swap! calls inc)
+                        (.getBytes "4:ab" "ISO-8859-1"))]
+          (try
+            (transport/recv transport)
+            nil
+            (catch :default error error)))]
+    (is (= 1 @calls))
+    (is (= :frame-limit-exceeded
+           (:nrepl.transport/error (ex-data error))))
+    (is (= {:limit 3 :unread 0 :chunk 4}
+           (select-keys
+            (ex-data error)
+            [:limit :unread :chunk])))))
 
 (deftest transport-does-not-rewrite-client-errors
   (let [native-error (ex-info "connection reset"
