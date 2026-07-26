@@ -1,6 +1,7 @@
 (ns nrepl.bencode-test
-  "Ported from nrepl.bencode-test — adapted to jolt's string-based encode/decode."
+  "Compatibility and byte-native nREPL bencode facade tests."
   (:require [clojure.test :refer [deftest is are testing]]
+            [jolt.bytes :as bytes]
             [nrepl.bencode :as bencode]))
 
 (defn- roundtrip [v] (first (bencode/decode (bencode/encode v))))
@@ -39,3 +40,34 @@
         [m2 _] (bencode/decode s i)]
     (is (= {"a" 1} m1))
     (is (= {"b" 2} m2))))
+
+(deftest byte-native-api-distinguishes-all-three-results
+  (let [wire (bencode/encode-bytes {"op" "describe"})
+        success (bencode/decode-bytes wire)
+        partial-array (byte-array (take (dec (alength wire)) wire))
+        partial-cursor
+        (bytes/cursor (bytes/window partial-array))
+        partial (bencode/decode-cursor partial-cursor)
+        invalid-cursor
+        (bytes/cursor
+         (bytes/window (.getBytes "i03e" "ISO-8859-1")))
+        invalid (bencode/decode-cursor invalid-cursor)]
+    (is (bytes? wire))
+    (is (= :ok (:status success)))
+    (is (= {"op" "describe"} (:value success)))
+    (is (= :need-more (:status partial)))
+    (is (identical? partial-cursor (:cursor partial)))
+    (is (= :invalid (:status invalid)))
+    (is (= :noncanonical-integer (:reason invalid)))
+    (is (identical? invalid-cursor (:cursor invalid)))))
+
+(deftest malformed-compatibility-input-fails-instead-of-accumulating
+  (let [error
+        (try
+          (bencode/decode "i03e")
+          nil
+          (catch Throwable error error))]
+    (is (= :invalid-frame
+           (:nrepl.bencode/error (ex-data error))))
+    (is (= :noncanonical-integer
+           (:reason (ex-data error))))))

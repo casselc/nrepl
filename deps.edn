@@ -2,7 +2,10 @@
 
  ;; Outbound connections are provided by the portable jolt-tcp client. Its
  ;; transitive jolt-net dependency owns the runtime-specific native bindings.
- :deps {io.github.casselc/jolt-tcp
+ :deps {local/jolt-bencode
+        {:local/root "../jolt-bencode"}
+
+        io.github.casselc/jolt-tcp
         {:git/url "https://github.com/casselc/jolt-tcp.git"
          :git/sha "0c3e085f43b90b346be9843e43448c890f8b701d"}}
 
@@ -12,7 +15,17 @@
  ;; this repo serves the full stack.
  :nrepl/middleware [nrepl.middleware/default-middleware]
 
- :aliases {:test {:extra-paths ["test"]
-                  :main-opts ["-m" "nrepl.test-runner"]}}
+ :aliases
+ {:test
+  {:extra-paths ["test"]
+   :main-opts ["-m" "nrepl.test-runner"]}
 
- :tasks {test "joltc -M:test"}}
+  :jvm-bencode-test
+  {:extra-paths ["test"]
+   :extra-deps
+   {org.clojure/clojure {:mvn/version "1.12.2"}}
+   :main-opts ["-m" "nrepl.bencode-test-runner"]}}
+
+ :tasks
+ {test "joltc -M:test"
+  test-bencode-jvm "clojure -Srepro -M:jvm-bencode-test"}}

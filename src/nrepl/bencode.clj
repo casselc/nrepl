@@ -1,54 +1,77 @@
 (ns nrepl.bencode
-  "bencode encode/decode for the nREPL wire protocol. Values flow as latin1
-  strings (1 char = 1 byte); text that may carry unicode is converted to/from
-  UTF-8 at the boundary. Used by the client transport (and available to anyone
-  speaking nREPL on jolt)."
-  (:require [clojure.string :as str]))
+  "nREPL's bencode compatibility facade over the byte-native jolt.bencode
+  codec.
 
-(defn ->wire "string -> latin1 wire form (each byte one char)." [s]
-  (String. (.getBytes (str s) "UTF-8") "ISO-8859-1"))
-(defn wire-> "latin1 wire form -> string (UTF-8 decode)." [s]
-  (String. (byte-array (map int s)) "UTF-8"))
+  New transport code should use `encode-bytes`, `decode-bytes`, or
+  `decode-cursor`. The historical `encode`/`decode` API remains available with
+  Latin-1 strings so existing callers do not need an atomic migration."
+  (:require [jolt.bencode :as codec]
+            [jolt.bytes :as bytes]))
+
+(defn ->wire
+  "Convert UTF-8 text to the historical Latin-1 wire-string representation."
+  [value]
+  (String. (.getBytes (str value) "UTF-8") "ISO-8859-1"))
+
+(defn wire->
+  "Decode the historical Latin-1 wire-string representation as UTF-8 text."
+  [value]
+  (String. (.getBytes value "ISO-8859-1") "UTF-8"))
+
+(defn encode-bytes
+  "Encode one nREPL-profile value to a byte array."
+  [value]
+  (codec/encode value))
+
+(defn decode-cursor
+  "Decode one value from a jolt.bytes/Cursor.
+
+  Returns the byte-native codec's explicit `:ok`, `:need-more`, or `:invalid`
+  result. Incomplete and invalid results preserve the exact input Cursor."
+  ([cursor]
+   (codec/decode cursor))
+  ([cursor options]
+   (codec/decode cursor options)))
+
+(defn decode-bytes
+  "Decode one value from the beginning of a byte array."
+  ([value]
+   (codec/decode-bytes value))
+  ([value options]
+   (codec/decode-bytes value options)))
 
 (defn encode
-  "Encode `v` (int / string / keyword / map / sequential / nil) to a bencode
-  latin1 string."
-  [v]
-  (cond
-    (integer? v) (str "i" v "e")
-    (string? v)  (let [w (->wire v)] (str (count w) ":" w))
-    (keyword? v) (let [w (->wire (name v))] (str (count w) ":" w))
-    (map? v)     (str "d" (apply str (mapcat (fn [[k val]] [(encode (name k)) (encode val)])
-                                             (sort-by #(name (first %)) v))) "e")
-    (or (seq? v) (vector? v)) (str "l" (apply str (map encode v)) "e")
-    (nil? v)     "0:"
-    :else        (let [w (->wire (str v))] (str (count w) ":" w))))
+  "Compatibility API: encode one value as a Latin-1 wire string."
+  [value]
+  (String. (encode-bytes value) "ISO-8859-1"))
+
+(defn- invalid-frame! [result]
+  (throw
+   (ex-info
+    "invalid nREPL bencode frame"
+    {:nrepl.bencode/error :invalid-frame
+     :reason (:reason result)
+     :offset (:offset result)})))
 
 (defn decode
-  "Decode one bencode value from latin1 string `s` at index `i`. Returns
-  [value next-index], or nil if `s` doesn't yet hold a complete value (so a
-  caller can accumulate more bytes). Dict string keys are UTF-8 decoded."
-  ([s] (decode s 0))
-  ([s i]
-   (when (< i (count s))
-     (let [c (nth s i)]
-       (cond
-         (= c \i) (let [e (str/index-of s "e" i)]
-                    (when e [(parse-long (subs s (inc i) e)) (inc e)]))
-         (= c \l) (loop [j (inc i) acc []]
-                    (cond (>= j (count s)) nil
-                          (= (nth s j) \e) [acc (inc j)]
-                          :else (let [r (decode s j)] (when r (recur (second r) (conj acc (first r)))))))
-         (= c \d) (loop [j (inc i) acc {}]
-                    (cond (>= j (count s)) nil
-                          (= (nth s j) \e) [acc (inc j)]
-                          :else (let [k (decode s j)]
-                                  (when k (let [v (decode s (second k))]
-                                            (when v (recur (second v) (assoc acc (first k) (first v)))))))))
-         (and (char? c) (>= (int c) 48) (<= (int c) 57))   ; string: <len>:<bytes>
-         (let [colon (str/index-of s ":" i)]
-           (when colon
-             (let [n (parse-long (subs s i colon)) start (inc colon) end (+ start n)]
-               ;; UTF-8 decode the byte run so encode/decode round-trip on unicode.
-               (when (<= end (count s)) [(wire-> (subs s start end)) end]))))
-         :else nil)))))
+  "Compatibility API: decode one value from Latin-1 wire string `value`.
+
+  Returns `[decoded next-index]`, nil for incomplete input, and throws
+  `:nrepl.bencode/error :invalid-frame` for malformed input. Use
+  `decode-cursor` when the caller needs all three statuses as data."
+  ([value]
+   (decode value 0))
+  ([value index]
+   (let [wire (.getBytes value "ISO-8859-1")
+         cursor (bytes/cursor (bytes/window wire) index)
+         result (decode-cursor cursor)]
+     (case (:status result)
+       :ok
+       [(:value result)
+        (bytes/cursor-position (:cursor result))]
+
+       :need-more
+       nil
+
+       :invalid
+       (invalid-frame! result)))))
