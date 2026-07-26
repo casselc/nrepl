@@ -23,6 +23,9 @@
 (def ^:private sessions (atom {}))   ;; id -> session
 
 (defn- run-eval [session code-wire ns-str reply token]
+  ;; Core Jolt's current server decoder intentionally exposes bencode byte
+  ;; strings as Latin-1 carriers to middleware. Normalize that legacy boundary
+  ;; here until the core server consumes jolt.bencode directly.
   (let [code (bencode/wire-> code-wire)
         ns-atom (:ns session)
         ;; the actual evaluation runs interruptibly: interrupt! on `token` aborts

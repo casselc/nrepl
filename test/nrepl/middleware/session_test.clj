@@ -13,6 +13,12 @@
       (h/eval-code t "(def counter 41)" :session s)
       (is (= 42 (h/eval-value t "(inc counter)" :session s))))))
 
+(deftest unicode-code-reaches-the-evaluator-as-text
+  (with-conn t
+    (let [s (h/new-session t)]
+      (is (= "naïve ☃"
+             (h/eval-value t "\"naïve ☃\"" :session s))))))
+
 (deftest per-session-current-ns
   (with-conn t
     (let [a (h/new-session t) b (h/new-session t)]
