@@ -2,16 +2,17 @@
 
  ;; Outbound connections are provided by the portable jolt-tcp client. Its
  ;; transitive jolt-net dependency owns the runtime-specific native bindings.
- :deps {local/jolt-bencode
-        {:local/root "../jolt-bencode"}
+ :deps {io.github.casselc/jolt-bencode
+        {:git/url "https://github.com/casselc/jolt-bencode.git"
+         :git/sha "17858cdbdbe1287cd9be10437549a8d3d72bb554"}
 
         io.github.casselc/jolt-tcp
         {:git/url "https://github.com/casselc/jolt-tcp.git"
-         :git/sha "0c3e085f43b90b346be9843e43448c890f8b701d"}}
+         :git/sha "f0e73381e4e715e10a0e07cc1e93227026d7bb3b"}}
 
  ;; This library's server middleware (sessions, interruptible-eval, completion,
  ;; lookup) — jolt.nrepl composes them over its built-in handler. A consuming
- ;; project adds this lib and copies this line; declared here so `joltc nrepl` in
+ ;; project adds this lib and copies this line; declared here so `jolt nrepl` in
  ;; this repo serves the full stack.
  :nrepl/middleware [nrepl.middleware/default-middleware]
 
@@ -35,7 +36,7 @@
    :main-opts ["-m" "nrepl.transport-hegel-runner"]}}
 
  :tasks
- {test "joltc -M:test"
+ {test "jolt -M:test"
   test-bencode-jvm "clojure -Srepro -M:jvm-bencode-test"
-  setup-hegel "joltc -A:hegel -m hegel.install"
-  test-hegel "joltc -M:hegel"}}
+  setup-hegel "jolt -A:hegel -m hegel.install"
+  test-hegel "jolt -M:hegel"}}

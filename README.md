@@ -3,7 +3,7 @@
 nREPL for [Jolt](https://github.com/jolt-lang/jolt) — the server-side middleware
 that grows jolt's built-in nREPL into the full feature set, plus an nREPL client.
 
-Jolt ships a small, extensible nREPL server in core (`joltc nrepl`): bencode over
+Jolt ships a small, extensible nREPL server in core (`jolt nrepl`): bencode over
 a socket, with `clone` / `describe` / `eval` / `load-file` / `close`. This library
 adds the heavier features as **middleware** — they're optional, so they don't
 bloat core:
@@ -29,8 +29,8 @@ composes them over the built-in handler:
 Then:
 
 ```
-joltc nrepl          # default port 7888; writes .nrepl-port
-joltc nrepl 12345    # explicit port
+jolt nrepl          # default port 7888; writes .nrepl-port
+jolt nrepl 12345    # explicit port
 ```
 
 Connect your editor (CIDER / Calva / Cursive) to the port in `.nrepl-port`. Your
@@ -72,9 +72,16 @@ clean only at a frame boundary; EOF with unread frame bytes reports
 `:truncated-frame`. The transport also bounds an accumulated frame at 64 MiB
 before allocating the next buffer.
 
-This incubation branch consumes `../jolt-bencode` through a local dependency.
-That must become a published coordinate or an upstream stdlib placement before
-the branch is independently consumable.
+This incubation branch now consumes immutable public Git coordinates:
+`casselc/jolt-bencode` at
+`17858cdbdbe1287cd9be10437549a8d3d72bb554`, which transitively pins
+`casselc/jolt-bytes`, and `casselc/jolt-tcp` at
+`f0e73381e4e715e10a0e07cc1e93227026d7bb3b`. It is therefore independently
+resolvable without sibling checkouts, while the package and API remain
+incubating. The current graph is validated with the rebased proposal core
+`casselc/jolt@89fe46e8a826b60b69d264fab76c864881055830`; it should not be
+switched back to an upstream release until the required host/FFI primitives
+land there.
 
 ## Notes for jolt
 
@@ -89,10 +96,10 @@ same wire protocol and behaviours on jolt-native threads.
 
 ## Tests
 
-`joltc -M:test` runs the suite (bencode, client, session, completion, lookup,
+`jolt -M:test` runs the suite (bencode, client, session, completion, lookup,
 interrupt) against an in-process server with the middleware installed.
 `clojure -Srepro -M:jvm-bencode-test` checks the compatibility facade and
-byte-native codec on JVM Clojure. `joltc -M:hegel` adds generated consumer
+byte-native codec on JVM Clojure. `jolt -M:hegel` adds generated consumer
 properties over the client transport: arbitrary socket chunk boundaries across
 multiple messages, clean versus truncated EOF, and fail-before-allocation frame
 limits. Its deliberate one-byte-over-limit control must shrink reproducibly to
