@@ -25,7 +25,14 @@
   {:extra-paths ["test"]
    :extra-deps
    {org.clojure/clojure {:mvn/version "1.12.2"}}
-   :main-opts ["-m" "nrepl.bencode-test-runner"]}
+   :main-opts ["-m" "nrepl.bencode-test-runner" "jvm"]}
+
+  ;; Descriptor-independent coverage for native targets whose jolt-net socket
+  ;; ABI has not yet been reviewed. This still resolves the public dependency
+  ;; graph, but loads only the bencode/bytes layers.
+  :portable-test
+  {:extra-paths ["test"]
+   :main-opts ["-m" "nrepl.bencode-test-runner" "jolt"]}
 
   :hegel
   {:extra-paths ["test/hegel"]
@@ -38,5 +45,6 @@
  :tasks
  {test "jolt -M:test"
   test-bencode-jvm "clojure -Srepro -M:jvm-bencode-test"
+  test-portable "jolt -M:portable-test"
   setup-hegel "jolt -A:hegel -m hegel.install"
   test-hegel "jolt -M:hegel"}}

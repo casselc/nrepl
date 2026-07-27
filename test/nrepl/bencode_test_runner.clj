@@ -2,12 +2,12 @@
   (:require [clojure.test :as test]
             [nrepl.bencode-test]))
 
-(defn -main [& _]
+(defn -main [& [runtime]]
   (let [result (test/run-tests 'nrepl.bencode-test)
         failures (+ (:fail result) (:error result))]
     (println
      {:status (if (zero? failures) :verified :failed)
-      :runtime :jvm
+      :runtime (keyword (or runtime "jvm"))
       :tests (:test result)
       :assertions (:pass result)
       :failures (:fail result)
