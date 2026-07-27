@@ -104,3 +104,7 @@ properties over the client transport: arbitrary socket chunk boundaries across
 multiple messages, clean versus truncated EOF, and fail-before-allocation frame
 limits. Its deliberate one-byte-over-limit control must shrink reproducibly to
 `{:limit 0 :chunk 1}`.
+
+The exact hosted targets, evidence anchors, proof custody, and deliberately
+narrow Windows ARM64 claim are recorded in
+[`docs/PLATFORM-COVERAGE.md`](docs/PLATFORM-COVERAGE.md).
