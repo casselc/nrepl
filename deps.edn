@@ -8,7 +8,7 @@
 
         io.github.casselc/jolt-tcp
         {:git/url "https://github.com/casselc/jolt-tcp.git"
-         :git/sha "f0e73381e4e715e10a0e07cc1e93227026d7bb3b"}}
+         :git/sha "911cf783d56e988adb2b8f716b6636fae5454e52"}}
 
  ;; This library's server middleware (sessions, interruptible-eval, completion,
  ;; lookup) — jolt.nrepl composes them over its built-in handler. A consuming
@@ -27,9 +27,8 @@
    {org.clojure/clojure {:mvn/version "1.12.2"}}
    :main-opts ["-m" "nrepl.bencode-test-runner" "jvm"]}
 
-  ;; Descriptor-independent coverage for native targets whose jolt-net socket
-  ;; ABI has not yet been reviewed. This still resolves the public dependency
-  ;; graph, but loads only the bencode/bytes layers.
+  ;; Dependency-free codec coverage. This still resolves the public dependency
+  ;; graph, but deliberately loads only the bencode/bytes layers.
   :portable-test
   {:extra-paths ["test"]
    :main-opts ["-m" "nrepl.bencode-test-runner" "jolt"]}
@@ -39,7 +38,7 @@
    :extra-deps
    {io.github.chucklehead-dev/jolt-hegel
     {:git/url "https://github.com/chucklehead-dev/jolt-hegel.git"
-     :git/sha "e03127174bcaea4ffa1c0cef11bde0efa009e9dc"}}
+     :git/sha "c406e6a85e9902dd89a42a3abce3d6161e5cd406"}}
    :main-opts ["-m" "nrepl.transport-hegel-runner"]}}
 
  :tasks
