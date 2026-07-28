@@ -10,9 +10,11 @@
             [nrepl.middleware.session-test]
             [nrepl.middleware.completion-test]
             [nrepl.middleware.lookup-test]
-            [nrepl.middleware.interruptible-eval-test]))
+            [nrepl.middleware.interruptible-eval-test]
+            [nrepl.target-assert :as target-assert]))
 
 (defn -main [& _]
+  (target-assert/assert-expected-target!)
   (let [r (t/run-tests)]
     (println (str "\n========== TOTAL =========="))
     (println (str "tests=" (:test r) " pass=" (:pass r) " fail=" (:fail r) " error=" (:error r)))
