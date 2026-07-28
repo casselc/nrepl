@@ -74,12 +74,13 @@ before allocating the next buffer.
 
 This incubation branch now consumes immutable public Git coordinates:
 `casselc/jolt-bencode` at
-`17858cdbdbe1287cd9be10437549a8d3d72bb554`, which transitively pins
+`7fda49ec750efb80d3c5abb609f807f2248f8cec`, which transitively pins
 `casselc/jolt-bytes`, and `casselc/jolt-tcp` at
-`f0e73381e4e715e10a0e07cc1e93227026d7bb3b`. It is therefore independently
+`911cf783d56e988adb2b8f716b6636fae5454e52`. It is therefore independently
 resolvable without sibling checkouts, while the package and API remain
 incubating. The current graph is validated with the rebased proposal core
-`casselc/jolt@89fe46e8a826b60b69d264fab76c864881055830`; it should not be
+`casselc/jolt@46e1f74fc14f29283586900ef4b98c45375c0500` (upstream v0.5.7
+plus the proposal stack); it should not be
 switched back to an upstream release until the required host/FFI primitives
 land there.
 
@@ -105,6 +106,6 @@ multiple messages, clean versus truncated EOF, and fail-before-allocation frame
 limits. Its deliberate one-byte-over-limit control must shrink reproducibly to
 `{:limit 0 :chunk 1}`.
 
-The exact hosted targets, evidence anchors, proof custody, and deliberately
-narrow Windows ARM64 claim are recorded in
+The exact hosted targets, evidence anchors, proof custody, and native Windows
+ARM64 source-runtime boundary are recorded in
 [`docs/PLATFORM-COVERAGE.md`](docs/PLATFORM-COVERAGE.md).

@@ -6,15 +6,15 @@ been proved.
 
 ## Evidence anchor
 
-The first complete hosted matrix passed on 2026-07-27:
+The current complete hosted matrix passed on 2026-07-27:
 
 - nREPL revision
-  [`3f48bda95387a77e86025edb84ce4ece69b3bad2`](https://github.com/casselc/nrepl/commit/3f48bda95387a77e86025edb84ce4ece69b3bad2);
+  [`078769877a1c0ce0aca142bf87b91969758fa111`](https://github.com/casselc/nrepl/commit/078769877a1c0ce0aca142bf87b91969758fa111);
 - GitHub Actions
-  [run 30279195003](https://github.com/casselc/nrepl/actions/runs/30279195003),
+  [run 30333128544](https://github.com/casselc/nrepl/actions/runs/30333128544),
   with all seven jobs successful;
 - proposal Jolt core
-  [`89fe46e8a826b60b69d264fab76c864881055830`](https://github.com/casselc/jolt/commit/89fe46e8a826b60b69d264fab76c864881055830);
+  [`46e1f74fc14f29283586900ef4b98c45375c0500`](https://github.com/casselc/jolt/commit/46e1f74fc14f29283586900ef4b98c45375c0500);
 - official Chez Scheme 10.4.1 built from source on every Jolt target; and
 - `JOLT_AOT_CACHE=0`, so these are source-runtime claims rather than packaged
   `joltc` or AOT-cache claims.
@@ -22,16 +22,16 @@ The first complete hosted matrix passed on 2026-07-27:
 The public application dependency graph was:
 
 - `casselc/jolt-bencode` at
-  [`17858cdbdbe1287cd9be10437549a8d3d72bb554`](https://github.com/casselc/jolt-bencode/commit/17858cdbdbe1287cd9be10437549a8d3d72bb554);
+  [`7fda49ec750efb80d3c5abb609f807f2248f8cec`](https://github.com/casselc/jolt-bencode/commit/7fda49ec750efb80d3c5abb609f807f2248f8cec);
 - its transitive `casselc/jolt-bytes` at
-  [`b66826131324df1693c17c5aba01d69e0b2186a5`](https://github.com/casselc/jolt-bytes/commit/b66826131324df1693c17c5aba01d69e0b2186a5);
+  [`c34b4d2275240a1efc7630f94cf97880cb905cc9`](https://github.com/casselc/jolt-bytes/commit/c34b4d2275240a1efc7630f94cf97880cb905cc9);
 - `casselc/jolt-tcp` at
-  [`f0e73381e4e715e10a0e07cc1e93227026d7bb3b`](https://github.com/casselc/jolt-tcp/commit/f0e73381e4e715e10a0e07cc1e93227026d7bb3b);
+  [`911cf783d56e988adb2b8f716b6636fae5454e52`](https://github.com/casselc/jolt-tcp/commit/911cf783d56e988adb2b8f716b6636fae5454e52);
 - its transitive `casselc/jolt-net` at
-  [`bd9865c3e6c73f8ec3dcfad8c00f718bd1973c46`](https://github.com/casselc/jolt-net/commit/bd9865c3e6c73f8ec3dcfad8c00f718bd1973c46);
+  [`c3747385235df812e0d739a3e9f71c4dfb07b474`](https://github.com/casselc/jolt-net/commit/c3747385235df812e0d739a3e9f71c4dfb07b474);
   and
 - `chucklehead-dev/jolt-hegel` at
-  [`e03127174bcaea4ffa1c0cef11bde0efa009e9dc`](https://github.com/chucklehead-dev/jolt-hegel/commit/e03127174bcaea4ffa1c0cef11bde0efa009e9dc),
+  [`c406e6a85e9902dd89a42a3abce3d6161e5cd406`](https://github.com/chucklehead-dev/jolt-hegel/commit/c406e6a85e9902dd89a42a3abce3d6161e5cd406),
   using libhegel 0.30.1.
 
 ## Hosted results
@@ -44,14 +44,16 @@ The public application dependency graph was:
 | Jolt, macOS ARM64 | Complete client/server and middleware suite over real loopback: 35 tests, 99 assertions, no failures or errors | Hegel: 400/300/300 cases |
 | Jolt, macOS x86-64 | Complete client/server and middleware suite over real loopback: 35 tests, 99 assertions, no failures or errors | Hegel: 400/300/300 cases |
 | Jolt, Windows x86-64 | Native PowerShell/source-mode complete client/server and middleware suite over real loopback: 35 tests, 99 assertions, no failures or errors | Hegel: 400/300/300 cases |
-| Jolt, Windows ARM64 | Native `tarm64nt` source-mode byte codec compatibility: 9 tests, 35 assertions, no failures or errors | Not run |
+| Jolt, Windows ARM64 | Native `tarm64nt` source-mode complete client/server and middleware suite over real loopback: 35 tests, 99 assertions, no failures or errors | Hegel: 400/300/300 cases |
 
 Every Hegel lane also reproduced the deliberate frame-limit control's minimal
 counterexample as `{:limit 0 :chunk 1}` and reported it non-flaky. The full
 suite starts Jolt's in-process nREPL server, connects through the public
-`jolt-tcp` client stack, and exercises the middleware. The Windows x86-64
-runner invokes Chez directly from PowerShell and observes the real child exit
-code; MSYS2 is used only to build Chez.
+`jolt-tcp` client stack, and exercises the middleware. Both Windows runners
+invoke Chez directly from PowerShell and observe the real child exit code;
+MSYS2 is used only to build Chez on x86-64. The ARM64 lane additionally fails
+closed unless the hosted runner is ARM64, Chez reports `tarm64nt`, and
+`jolt.host/target` reports `:aarch64`.
 
 ## What the matrix establishes
 
@@ -78,18 +80,18 @@ The proof artifacts stay with the layer whose semantics they describe:
 - the pinned `jolt-bytes` revision contains the Window/Cursor Ansatz sources,
   immutable generated oracles, provenance and digest checks, bounded copy
   models, and runtime conformance fixtures in
-  [`docs/PROOFS-AND-ORACLES.md`](https://github.com/casselc/jolt-bytes/blob/b66826131324df1693c17c5aba01d69e0b2186a5/docs/PROOFS-AND-ORACLES.md);
+  [`docs/PROOFS-AND-ORACLES.md`](https://github.com/casselc/jolt-bytes/blob/c34b4d2275240a1efc7630f94cf97880cb905cc9/docs/PROOFS-AND-ORACLES.md);
 - the pinned `jolt-bencode` revision contains the Ansatz framing oracle,
   exhaustive codec oracle, and paired corrected/buggy/non-vacuity SMT models in
-  [`docs/PROOFS-AND-ORACLES.md`](https://github.com/casselc/jolt-bencode/blob/17858cdbdbe1287cd9be10437549a8d3d72bb554/docs/PROOFS-AND-ORACLES.md);
+  [`docs/PROOFS-AND-ORACLES.md`](https://github.com/casselc/jolt-bencode/blob/7fda49ec750efb80d3c5abb609f807f2248f8cec/docs/PROOFS-AND-ORACLES.md);
 - the pinned `jolt-tcp` revision contains bounded reactor, client deadline,
   ownership, EOF, admission, shutdown, and monotonic wake-cursor models under
-  [`docs/proofs/`](https://github.com/casselc/jolt-tcp/tree/f0e73381e4e715e10a0e07cc1e93227026d7bb3b/docs/proofs);
+  [`docs/proofs/`](https://github.com/casselc/jolt-tcp/tree/911cf783d56e988adb2b8f716b6636fae5454e52/docs/proofs);
   and
 - the pinned `jolt-net` revision contains its socket lease, descriptor,
   readiness, nonblocking, Winsock initialization, wake transport, close, and
   wake-cursor models under
-  [`docs/proofs/`](https://github.com/casselc/jolt-net/tree/bd9865c3e6c73f8ec3dcfad8c00f718bd1973c46/docs/proofs).
+  [`docs/proofs/`](https://github.com/casselc/jolt-net/tree/c3747385235df812e0d739a3e9f71c4dfb07b474/docs/proofs).
 
 This repository does not copy those artifacts and does not rerun Ansatz or the
 SMT models. It consumes their pinned implementations and adds integration-level
@@ -99,10 +101,9 @@ behavior.
 
 ## Deliberate boundaries
 
-- Windows ARM64 is a gating native source-runtime claim for bencode and bytes
-  only. The transitive `jolt-net` socket descriptor ABI has not yet been
-  reviewed on that target, so this lane does not load `jolt-tcp` namespaces,
-  open sockets, run an nREPL server, or install Hegel.
+- Windows ARM64 is a gating native source-runtime claim for the complete
+  dependency graph, real loopback sockets, nREPL middleware, and Hegel
+  properties. It is not a packaged-Jolt or AOT-image claim.
 - No lane claims packaged `joltc`, AOT-cache portability, or installation of a
   binary Jolt distribution. AOT is disabled throughout.
 - Jolt core's built-in server still presents its historical Latin-1 string
