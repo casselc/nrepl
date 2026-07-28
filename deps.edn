@@ -4,7 +4,7 @@
  ;; transitive jolt-net dependency owns the runtime-specific native bindings.
  :deps {io.github.casselc/jolt-bencode
         {:git/url "https://github.com/casselc/jolt-bencode.git"
-         :git/sha "17858cdbdbe1287cd9be10437549a8d3d72bb554"}
+         :git/sha "7fda49ec750efb80d3c5abb609f807f2248f8cec"}
 
         io.github.casselc/jolt-tcp
         {:git/url "https://github.com/casselc/jolt-tcp.git"
